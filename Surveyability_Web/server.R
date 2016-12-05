@@ -14,24 +14,18 @@ library("magrittr")
 library("lubridate")
 library("xlsx")
 library("DT")
+library("splitstackshape")
 flowData<- read.xlsx("Daily_Precip_Discharge_Monitoring.xlsx", sheetName = "DailyGauge")
 tripData<-read.xlsx("TripData.xlsx", sheetName = "TripDataFish")
 tripData$DATE<-ymd(tripData$Date)
 
-
-# flowData$DRY.LAM.CFS[flowData$DRY.LAM.CFS=="down"] <- NA
-# flowData$MIL.School..ft..[flowData$MIL.School..ft..=="down"] <- NA
-# flowData$MIL.Puccioni..in..[flowData$MIL.Puccioni..in..=="down"] <- NA
-# flowData$FEL..in..[flowData$FEL..in..=="down"] <- NA
-# flowData$MAR.ChristmasTree..in..[flowData$MAR.ChristmasTree..in..=="down"]<-NA
-# flowData$WIL.3rdBridge..ft..[flowData$WIL.3rdBridge..ft..=="down"]<-NA
-# flowData$MAA.Stage..ft..[flowData$MAA.Stage..ft..=="down"]<-NA
-# flowData$SAN.Stage..ft..[flowData$SAN.Stage..ft..]<-NA
 gaugeNames<-c(colnames(flowData))
 gaugeNames<-gaugeNames[2:14]
 flowData[gaugeNames]<- sapply(flowData[gaugeNames],as.numeric)
 mergedData<- join(flowData, tripData, by = "DATE", "inner")
 mergedData$Fishing<-as.factor(mergedData$Fishing)
+mergedData$IndividualCrew<-mergedData$Crew
+#mergedData <- cSplit(mergedData, "IndividualCrew", sep=" ")
 
 
 #FilteredData<- mergedData %>% filter(REACHNAME == selectedReach)
@@ -58,7 +52,7 @@ shinyServer(function(input, output) {
   
   output$fishTable = renderDataTable({
     
-    FishData<- filter(mergedData, ReachName == input$Reach)
+    FishData<- mergedData %>%filter(ReachName == input$Reach)%>%filter(DATE >= input$startDate & DATE <= input$enddate)
     FishData<- FishData[,c("Date","ReachName", "Tributary", "Crew", "CohoIndividuals","SteelheadIndividuals","ChinookIndividuals", "SalmonidSpIndividuals", "CohoRedds", "SteelheadRedds", "ChinookRedds", "SalmonidSpRedds","Comments")]
     DT::datatable(FishData, colnames = c("Date","Reach", "Tributary", "Crew", "Coho","Steelhead","Chinook", "SalmonidSp", "Coho Redds", "Steelhead Redds", "Chinook Redds", "SalmonidSp Redds","Comments"), options = list(pagelength = 10, autoWidth = FALSE))
   })

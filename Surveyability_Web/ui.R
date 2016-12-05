@@ -40,10 +40,12 @@ theme="bootstrap.css",
 
     # Show a plot of the generated distribution
     mainPanel(
-      plotlyOutput("HydroGraphPlot"),
+      tabsetPanel( type = "tabs",
+      tabPanel("Surveyability", plotlyOutput("HydroGraphPlot"),
       htmlOutput("maxflow"),
-      DT::dataTableOutput("fishTable")
-      )
+      DT::dataTableOutput("fishTable")),
+      tabPanel("DaysSinceSurveyed", DT::dataTableOutput("mostRecentSurveyTable"))
+      ))
     
     
   )

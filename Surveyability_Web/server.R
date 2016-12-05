@@ -27,6 +27,10 @@ mergedData$Fishing<-as.factor(mergedData$Fishing)
 mergedData$IndividualCrew<-mergedData$Crew
 #mergedData <- cSplit(mergedData, "IndividualCrew", sep=" ")
 
+#Get the most recent date the trip was surveyed if it was surveyed this season
+mostRecentTrip <- tripData %>% filter(Season == "2016-2017")%>% filter(Fishing == 1) %>% group_by(ReachName, Tributary) %>% filter(DATE == max(DATE)) %>% arrange(ReachName,Tributary)
+mostRecentTrip$daysSinceSurveyed<- (today("America/Los_Angeles"))-mostRecentTrip$DATE
+
 
 #FilteredData<- mergedData %>% filter(REACHNAME == selectedReach)
 #maxSurveyedCFS<- max(FilteredData[selectedGauge])
@@ -55,6 +59,11 @@ shinyServer(function(input, output) {
     FishData<- mergedData %>%filter(ReachName == input$Reach)%>%filter(DATE >= input$startDate & DATE <= input$enddate)
     FishData<- FishData[,c("Date","ReachName", "Tributary", "Crew", "CohoIndividuals","SteelheadIndividuals","ChinookIndividuals", "SalmonidSpIndividuals", "CohoRedds", "SteelheadRedds", "ChinookRedds", "SalmonidSpRedds","Comments")]
     DT::datatable(FishData, colnames = c("Date","Reach", "Tributary", "Crew", "Coho","Steelhead","Chinook", "SalmonidSp", "Coho Redds", "Steelhead Redds", "Chinook Redds", "SalmonidSp Redds","Comments"), options = list(pagelength = 10, autoWidth = FALSE))
+  })
+  
+  output$mostRecentSurveyTable = renderDataTable({
+    mostRecentTrip<- mostRecentTrip[,c("daysSinceSurveyed", "ReachName", "Tributary", "Date" )]
+    DT::datatable(mostRecentTrip, colnames = c("Days Since Surveyed", "Reach", "Tributary", "Date Last Surveyed" ), rownames = FALSE, options = list(order = list(list(0, 'desc'))))
   })
   # output$results<- renderTable({
   #   FilteredData<- filter(mergedData, REACHNAME == input$Reach)

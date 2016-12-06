@@ -1,11 +1,13 @@
 library(shiny)
+library("plyr")
+library("dplyr")
 library("plotly")
-library("dtplyr")
 library("ggplot2")
 library("magrittr")
 library("lubridate")
 library("xlsx")
 library("DT")
+library("splitstackshape")
 
 flowData<- read.xlsx("Daily_Precip_Discharge_Monitoring.xlsx", sheetName = "DailyGauge")
 tripData<-read.xlsx("TripData.xlsx", sheetName = "TripDataFish")
@@ -16,8 +18,7 @@ gaugeNames<-gaugeNames[2:14]
 flowData[gaugeNames]<- sapply(flowData[gaugeNames],as.numeric)
 mergedData<- join(flowData, tripData, by = "DATE", "inner")
 mergedData$Fishing<-as.factor(mergedData$Fishing)
-#mergedData$IndividualCrew<-mergedData$Crew
-#mergedData <- cSplit(mergedData, "IndividualCrew", sep=" ")
+
 
 #Get the most recent date the trip was surveyed if it was surveyed this season
 mostRecentTrip <- tripData %>% filter(Season == "2016-2017")%>% filter(Fishing == 1) %>% group_by(ReachName, Tributary) %>% filter(DATE == max(DATE)) %>% arrange(ReachName,Tributary)

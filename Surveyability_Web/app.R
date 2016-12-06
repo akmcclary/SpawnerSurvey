@@ -88,7 +88,7 @@ server<- function(input, output) {
   
   output$mostRecentSurveyTable = renderDataTable({
     mostRecentTrip<- mostRecentTrip[,c("daysSinceSurveyed", "ReachName", "Tributary", "Date" )]
-    DT::datatable(mostRecentTrip, colnames = c("Days Since Surveyed", "Reach", "Tributary", "Date Last Surveyed" ), rownames = FALSE, options = list(pagelength = 30, order = list(list(0, 'desc'))))
+    DT::datatable(mostRecentTrip, colnames = c("Days Since Surveyed", "Reach", "Tributary", "Date Last Surveyed" ), rownames = FALSE, options = list(pageLength = 55, order = list(list(0, 'desc'))))
   })
   # output$results<- renderTable({
   #   FilteredData<- filter(mergedData, REACHNAME == input$Reach)

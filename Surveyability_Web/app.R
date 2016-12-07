@@ -23,7 +23,8 @@ mergedData$Fishing<-as.factor(mergedData$Fishing)
 #Get the most recent date the trip was surveyed if it was surveyed this season
 mostRecentTrip <- tripData %>% filter(Season == "2016-2017")%>% filter(Fishing == 1) %>% group_by(ReachName, Tributary) %>% filter(DATE == max(DATE)) %>% arrange(ReachName,Tributary)
 mostRecentTrip$daysSinceSurveyed<- (today("America/Los_Angeles"))-mostRecentTrip$DATE
-
+TripCounts<-tripData %>% filter(Season == "2016-2017")%>% filter(Fishing == 1) %>%count_(c("ReachName", "Tributary"))
+mostRecentTrip<-inner_join(TripCounts, mostRecentTrip, by = c("ReachName", "Tributary"))
 
 #FilteredData<- mergedData %>% filter(REACHNAME == selectedReach)
 #maxSurveyedCFS<- max(FilteredData[selectedGauge])
@@ -87,8 +88,8 @@ server<- function(input, output) {
   })
   
   output$mostRecentSurveyTable = renderDataTable({
-    mostRecentTrip<- mostRecentTrip[,c("daysSinceSurveyed", "ReachName", "Tributary", "Date" )]
-    DT::datatable(mostRecentTrip, colnames = c("Days Since Surveyed", "Reach", "Tributary", "Date Last Surveyed" ), rownames = FALSE, options = list(pageLength = 55, order = list(list(0, 'desc'))))
+    mostRecentTrip<- mostRecentTrip[,c("daysSinceSurveyed", "ReachName", "Tributary", "Date", "n" )]
+    DT::datatable(mostRecentTrip, colnames = c("Days Since Surveyed", "Reach", "Tributary", "Date Last Surveyed", "Number of Times Surveyed this Year" ), rownames = FALSE, options = list(pageLength = 55, order = list(list(0, 'desc'))))
   })
   # output$results<- renderTable({
   #   FilteredData<- filter(mergedData, REACHNAME == input$Reach)

@@ -9,10 +9,15 @@ library("xlsx")
 library("DT")
 library("splitstackshape")
 
-flowData<- read.xlsx("Daily_Precip_Discharge_Monitoring.xlsx", sheetName = "DailyGauge")
-tripData<-read.xlsx("TripData.xlsx", sheetName = "TripDataFish")
-tripData$DATE<-ymd(tripData$Date)
+#flowData<- read.xlsx("Daily_Precip_Discharge_Monitoring.xlsx", sheetName = "DailyGauge")
+#tripData<-read.xlsx("TripData.xlsx", sheetName = "TripDataFish")
 
+flowData<- read.csv("Daily_Precip_Discharge_Monitoring.csv")
+tripData<-read.csv("TripDataFish.csv")
+
+
+tripData$DATE<-mdy(tripData$Date)
+flowData$DATE<-mdy(flowData$DATE)
 gaugeNames<-c(colnames(flowData))
 gaugeNames<-gaugeNames[2:14]
 flowData[gaugeNames]<- sapply(flowData[gaugeNames],as.numeric)
@@ -63,8 +68,8 @@ ui<- fluidPage(
     # Show a plot of the generated distribution
     mainPanel(
       tabsetPanel( type = "tabs",
-                   tabPanel("Surveyability", plotlyOutput("HydroGraphPlot"),
-                            htmlOutput("maxflow"),
+                   tabPanel("Surveyability", htmlOutput("maxflow"), plotlyOutput("HydroGraphPlot"),
+                            
                             DT::dataTableOutput("fishTable")),
                    tabPanel("DaysSinceSurveyed", DT::dataTableOutput("mostRecentSurveyTable"))
       ))
@@ -77,7 +82,7 @@ server<- function(input, output) {
   output$maxflow <-renderUI({
     FilteredData<- filter(mergedData, ReachName == input$Reach)
     maxSurveyedCFS<- max(FilteredData[input$Gauge], na.rm = TRUE)
-    HTML(paste("<b> This reach has been surveyed at a maximum gauge height of:</b>", maxSurveyedCFS))
+    HTML(paste("<p> <br> </p> <b> This reach has been surveyed at a maximum gauge height of:", maxSurveyedCFS,"</b> "))
   })
   
   output$fishTable = renderDataTable({

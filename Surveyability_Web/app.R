@@ -6,7 +6,7 @@ library("ggplot2")
 library("magrittr")
 library("lubridate")
 library("DT")
-
+library("RColorBrewer")
 library("readr")
 #flowData<- read.xlsx("Daily_Precip_Discharge_Monitoring.xlsx", sheetName = "DailyGauge")
 #tripData<-read.xlsx("TripDataFish.xlsx", sheetName = "AllData")
@@ -14,24 +14,34 @@ library("readr")
 #Import Data
 flowData<- read_csv("Daily_Precip_Discharge_Monitoring.csv")
 tripData<-read_csv("TripDataFish.csv")
-#fish<-read.csv("Fish.csv")
-#redds<-read.csv("Redds.csv")
+fish<-read_csv("Fish.csv")
+redds<-read_csv("Redds.csv")
 
 #Convert Dates to Dates in R
 tripData$DATE<-tripData$Date
 flowData$DATE<-mdy(flowData$DATE)
-#fish$Date<-mdy(fish$Date)
-#redds$Date<-mdy(redds$Date)
-
+fish$Date<-mdy(fish$Date)
+redds$Date<-mdy(redds$Date)
+fish<-mutate_each(fish,funs(toupper))
+redds<-mutate_each(redds,funs(toupper))
 #FishTotals<-aggregate(fish, by= list(ReachName = fish$ReachName, Tributary = fish$Tributary, Season = fish$Season, Species = fish$Species), FUN = length)
 #redds<-filter(redds,ReddAge==1)
 #ReddTotals<-aggregate(redds, by= list(ReachName = redds$ReachName, Tributary = redds$Tributary, Season = redds$Season, Species = redds$Species), FUN = length)
+myColors<-brewer.pal(6,"Set1")
+names(myColors)<-levels(fish$Species)
+colScale<-scale_color_manual(name="Species", values = myColors)
+fillScale<-scale_fill_manual(name="Species", values = myColors)
+
+speciesList<-c("COHO SALMON", "SALMONID SP", "STEELHEAD", "CHINOOK SALMON", "PACIFIC LAMPREY")
 
 gaugeNames<-c(colnames(flowData))
 gaugeNames<-gaugeNames[2:14]
 flowData[gaugeNames]<- sapply(flowData[gaugeNames],as.numeric)
 mergedData<- join(flowData, tripData, by = "DATE", "inner")
 mergedData$Fishing<-as.factor(mergedData$Fishing)
+
+#fishplot<-fish%>%filter(Season=="2016-2017")%>%ggplot(aes(Species, fill = Species))+ geom_bar()+theme_classic()+ggtitle("Live Fish Seen")+stat_count(aes(y = ..count.. + 1, label=..count..), vjust=0, geom="text", position="identity")+ fillScale
+#reddplot<-redds%>%filter(Season=="2016-2017")%>%filter(ReddAge == 1)%>%ggplot(aes(Species, fill = Species))+ geom_bar()+theme_classic()+ggtitle("Redds Seen")+stat_count(aes(y = ..count.. + 1, label=..count..), vjust=0, geom="text", position="identity")+ fillScale
 
 #ReddTotalsPlot<-redds %>% filter(ReachName=="RED 1") %>% filter(Tributary == "REDWOOD CREEK") %>% filter(Season == "2015-2016") %>% ggplot(aes(x=Species, fill=Species))+ geom_bar()
 #Get the most recent date the trip was surveyed if it was surveyed this season
@@ -80,7 +90,8 @@ ui<- fluidPage(
                    tabPanel("Surveyability", htmlOutput("maxflow"), plotlyOutput("HydroGraphPlot"),
                             
                             DT::dataTableOutput("fishTable")),
-                   tabPanel("DaysSinceSurveyed", DT::dataTableOutput("mostRecentSurveyTable"))
+                   tabPanel("DaysSinceSurveyed", DT::dataTableOutput("mostRecentSurveyTable")),
+                   tabPanel("Fish And Redd Counts", plotOutput("fishGraph"), plotOutput("reddGraph"))
       ))
     
     
@@ -93,7 +104,16 @@ server<- function(input, output) {
     maxSurveyedCFS<- max(FilteredData[input$Gauge], na.rm = TRUE)
     HTML(paste("<p> <br> </p> <b> This reach has been surveyed at a maximum gauge height of:", maxSurveyedCFS,"</b> "))
   })
-  
+  output$fishGraph <- renderPlot({
+    fishplot<-fish%>%filter(Season=="2016-2017")%>%filter(ReachName == input$Reach)%>%ggplot(aes(Species, fill = Species))+ geom_bar()+theme_classic()+ggtitle("Live Fish Seen")+stat_count(aes(y = ..count.. + 1, label=..count..), vjust=0, geom="text", position="identity")+ fillScale +scale_x_discrete(limits=speciesList) 
+  fishplot
+    }
+    
+  )
+  output$reddGraph<- renderPlot({
+    reddplot<-redds%>%filter(Season=="2016-2017")%>%filter(ReddAge == 1)%>%filter(ReachName == input$Reach)%>%ggplot(aes(Species, fill = Species))+ geom_bar()+theme_classic()+ggtitle("Redds Seen")+stat_count(aes(y = ..count.. + 1, label=..count..), vjust=0, geom="text", position="identity")+ fillScale +scale_x_discrete(limits=speciesList)
+reddplot
+  })
   output$fishTable = renderDataTable({
     
     FishData<- mergedData %>%filter(ReachName == input$Reach)%>%filter(DATE >= input$startDate & DATE <= input$enddate)

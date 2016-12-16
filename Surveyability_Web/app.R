@@ -91,7 +91,9 @@ ui<- fluidPage(
                             
                             DT::dataTableOutput("fishTable")),
                    tabPanel("DaysSinceSurveyed", DT::dataTableOutput("mostRecentSurveyTable")),
-                   tabPanel("Fish And Redd Counts", plotOutput("fishGraph"), plotOutput("reddGraph"))
+                   tabPanel("Fish And Redd Counts",
+                             
+                            plotOutput("fishGraph"), plotOutput("reddGraph"), textOutput("NoFish"))
       ))
     
     
@@ -104,15 +106,35 @@ server<- function(input, output) {
     maxSurveyedCFS<- max(FilteredData[input$Gauge], na.rm = TRUE)
     HTML(paste("<p> <br> </p> <b> This reach has been surveyed at a maximum gauge height of:", maxSurveyedCFS,"</b> "))
   })
+  
+  
+  
   output$fishGraph <- renderPlot({
-    fishplot<-fish%>%filter(Season=="2016-2017")%>%filter(ReachName == input$Reach)%>%ggplot(aes(Species, fill = Species))+ geom_bar()+theme_classic()+ggtitle("Live Fish Seen")+stat_count(aes(y = ..count.. + 1, label=..count..), vjust=0, geom="text", position="identity")+ fillScale +scale_x_discrete(limits=speciesList) 
+    FishNumber<-fish%>%filter(Season=="2016-2017")%>%filter(ReachName == input$Reach)%>%nrow()
+    if (FishNumber>0){
+    
+      fishplot<-fish%>%filter(Season=="2016-2017")%>%filter(ReachName == input$Reach)%>%ggplot(aes(Species, fill = Species))+ geom_bar()+theme_classic()+ggtitle("Live Fish Seen")+stat_count(aes(y = ..count.. + 1, label=..count..), vjust=0, geom="text", position="identity")+ fillScale +scale_x_discrete(limits=speciesList) 
   fishplot
+    }
     }
     
   )
+  
+  output$NoFish <- renderText({
+    NoFish<-fish%>%filter(Season=="2016-2017")%>%filter(ReachName == input$Reach)%>%nrow()
+    if (NoFish==0){
+     TestVariable<-"No fish"
+     print(TestVariable)
+     }
+  }
+  ) 
+  
   output$reddGraph<- renderPlot({
+    ReddNumber <- redds%>%filter(Season=="2016-2017")%>%filter(ReddAge == 1)%>%filter(ReachName == input$Reach)%>%nrow()
+    if (ReddNumber>0){
     reddplot<-redds%>%filter(Season=="2016-2017")%>%filter(ReddAge == 1)%>%filter(ReachName == input$Reach)%>%ggplot(aes(Species, fill = Species))+ geom_bar()+theme_classic()+ggtitle("Redds Seen")+stat_count(aes(y = ..count.. + 1, label=..count..), vjust=0, geom="text", position="identity")+ fillScale +scale_x_discrete(limits=speciesList)
-reddplot
+  reddplot
+    }
   })
   output$fishTable = renderDataTable({
     

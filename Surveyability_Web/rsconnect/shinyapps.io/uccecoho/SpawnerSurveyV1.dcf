@@ -3,9 +3,9 @@ title:
 account: uccecoho
 server: shinyapps.io
 appId: 141280
-bundleId: 652971
+bundleId: 654843
 url: https://uccecoho.shinyapps.io/SpawnerSurveyV1/
-when: 1481922137.18732
+when: 1482161765.84858
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: 65DE7CD4.tmp|ConvertFishDatatoCSV.R|Daily_Precip_Discharge_Monitoring.xlsx|LinkedTripData.csv|TripData.txt|TripData.xlsx|TripDataFish.xlsx|tripDataTest.csv|TripDataUnicode.txt
+ignoredFiles: 65DE7CD4.tmp|ConvertFishDatatoCSV.R|Daily_Precip_Discharge_Monitoring.xlsx|LinkedTripData.csv|TripData.txt|TripData.xlsx|TripDataFish.xlsx|TripDataUnicode.txt

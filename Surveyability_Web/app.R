@@ -21,8 +21,8 @@ redds<-read_csv("Redds.csv")
 #Convert Dates to Dates in R
 tripData$DATE<-tripData$Date
 flowData$DATE<-mdy(flowData$DATE)
-fish$Date<-mdy(fish$Date)
-redds$Date<-mdy(redds$Date)
+# fish$Date<-mdy(fish$Date)
+# redds$Date<-mdy(redds$Date)
 fish<-mutate_each(fish,funs(toupper))
 redds<-mutate_each(redds,funs(toupper))
 uploadDate<-max(tripData$DATE)
@@ -57,6 +57,7 @@ mostRecentTrip<-inner_join(TripCounts, mostRecentTrip, by = c("ReachName", "Trib
 
 #GreenValleyPlot <- tripData %>% filter(REACHNAME == selectedReach)%>% ggplot(aes(x=DATE, y = FISHING)) + geom_point()+ scale_x_date()
 #GreenValleyPlot + geom_line(data = flowData, aes(DATE, MIL.School..ft..))
+CrewNames<-c("ZR","WB","CO","MT","LE","AMJ","NB","AB","AM","AI", "SB", "JP", "KS","RA", "BA")
 
 surveyedReaches<-unique(tripData$ReachName)
 #surveyedReaches<- as.vector.factor(surveyedReaches)
@@ -102,7 +103,7 @@ ui<- fluidPage(
                             selectInput("Season",
                                         "Season:",
                                         seasonList, selected = "2016-2017"),
-                            htmlOutput("NumberOfFish"), plotOutput("fishGraph"), htmlOutput("NumberOfRedds"), plotOutput("reddGraph"))
+                            htmlOutput("NumberOfFish"), plotOutput("fishGraph"), htmlOutput("NumberOfRedds"), plotOutput("reddGraph")), tabPanel("Crew Totals", selectInput("Crew","Crew:", CrewNames),htmlOutput("CrewNumberOfFish"), plotOutput("CrewfishGraph"), htmlOutput("CrewNumberOfRedds"), plotOutput("CrewreddGraph"))
       ))
     
     
@@ -147,7 +148,33 @@ server<- function(input, output) {
     } else HTML(paste("<p> <br> </p> <b> There were no fish seen on ", input$Reach, "in the", input$Season,"season </b> "))
   }
   ) 
+  output$CrewfishGraph <- renderPlot({
+    FishNumber<-fish%>%filter(Season == "2016-2017")%>%filter(grepl(input$Crew, Crew))%>%nrow()
+    if (FishNumber>0){
+      
+      fishplot<-fish%>%filter(Season == "2016-2017")%>%filter(grepl(input$Crew, Crew))%>%ggplot(aes(Species, fill = Species))+ geom_bar(width = .75)+theme_classic()+theme(axis.text = element_text(face = "bold", hjust = .5, size = 12), axis.title.x = element_blank(), axis.title.y = element_blank(), plot.title = element_text(face = "bold", hjust = .5, size = 16),  legend.title = element_text(face = "bold", hjust = .5, size = 12) )+ ggtitle("Live Fish Seen")+stat_count(aes(y = ..count.. /1.5  , label=..count..), vjust= 0, size = 6, geom="text", position="identity")+ fillScale + scale_x_discrete(limits=speciesList) + scale_y_continuous(breaks=pretty_breaks(n = 3, min.n=0)) 
+      # fishplotly<-ggplotly( fishplot)
+      # fishplotly
+      fishplot
+      
+    } else return(NULL)   
+  }
   
+  )
+  
+  output$CrewNumberOfFish <- renderUI({
+    CrewFishNumbers<-fish %>% filter(Season == "2016-2017")%>%filter(grepl(input$Crew, Crew))%>%nrow()
+    
+    
+    if(input$Season == "2016-2017"){
+      if(CrewFishNumbers>0){
+        HTML(paste("<p> <br> </p> <b> There have been ", CrewFishNumbers,"  total fish seen by ", input$Crew, "in the", input$Season,"season </b> ")) 
+      } else HTML(paste("<p> <br> </p> <b> There have been no fish seen by ", input$Crew, " this season </b> "))
+    } else if(CrewFishNumbers>0){
+      HTML(paste("<p> <br> </p> <b> There were ", CrewFishNumbers,"  total fish seen on ", input$Crew, "in the", input$Season,"season </b> ")) 
+    } else HTML(paste("<p> <br> </p> <b> There were no fish seen by ", input$Crew, "in the", input$Season,"season </b> "))
+  }
+  )  
   output$NumberOfRedds <- renderUI({
     ReddNumbers<-redds%>%filter(Season==input$Season)%>%filter(ReddAge == 1)%>%filter(ReachName == input$Reach)%>%nrow()
     
@@ -169,6 +196,29 @@ server<- function(input, output) {
   # reddplotly
     reddplot
    
+    } else return(NULL)
+  })
+  output$CrewNumberOfRedds <- renderUI({
+    CrewReddNumbers<-redds%>%filter(Season==input$Season)%>%filter(ReddAge == 1)%>%filter(grepl(input$Crew, Crew))%>%nrow()
+    
+    
+    if(input$Season == "2016-2017"){
+      if(CrewReddNumbers>0){
+        HTML(paste("<p> <br> </p> <b> There have been ", CrewReddNumbers,"  total redds seen by ", input$Crew, " in the", input$Season," season </b> ")) 
+      } else HTML(paste("<p> <br> </p> <b> There have been no redds seen by ", input$Crew, " this season </b> "))} else if(ReddNumbers>0){
+        HTML(paste("<p> <br> </p> <b> There were ", CrewReddNumbers,"  total redds seen on ", input$Crew, " in the", input$Season," season </b> ")) 
+      } else HTML(paste("<p> <br> </p> <b> There were no redds seen by ", input$Crew, " in the", input$Season," season </b> "))
+  }
+  ) 
+  
+  output$CrewreddGraph<- renderPlot({
+    CrewReddNumber <- redds%>%filter(Season==input$Season)%>%filter(ReddAge == 1)%>%filter(grepl(input$Crew, Crew))%>%nrow()
+    if (CrewReddNumber>0){
+      Crewreddplot<-redds%>%filter(Season==input$Season)%>%filter(ReddAge == 1)%>%filter(grepl(input$Crew, Crew))%>%ggplot(aes(Species, fill = Species))+ geom_bar(width = .75)+theme_classic()+theme(axis.text = element_text(face = "bold", hjust = .5, size = 12), axis.title.x = element_blank(), axis.title.y = element_blank(), plot.title = element_text(face = "bold", hjust = .5, size = 16),  legend.title = element_text(face = "bold", hjust = .5, size = 12) )+ ggtitle("Redds Seen")+stat_count(aes(y = ..count.. /1.5  , label=..count..), vjust= 0, size = 6, geom="text", position="identity")+ fillScale + scale_x_discrete(limits=speciesList) + scale_y_continuous(breaks=pretty_breaks(n = 3, min.n=0)) 
+      # reddplotly<-ggplotly(reddplot)
+      # reddplotly
+      Crewreddplot
+      
     } else return(NULL)
   })
   output$fishTable = renderDataTable({

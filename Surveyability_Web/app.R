@@ -26,10 +26,11 @@ flowData$DATE<-mdy(flowData$DATE)
 fish<-mutate_each(fish,funs(toupper))
 redds<-mutate_each(redds,funs(toupper))
 uploadDate<-max(tripData$DATE)
+fish<-filter(fish, Species != "-9999")
 #FishTotals<-aggregate(fish, by= list(ReachName = fish$ReachName, Tributary = fish$Tributary, Season = fish$Season, Species = fish$Species), FUN = length)
 #redds<-filter(redds,ReddAge==1)
 #ReddTotals<-aggregate(redds, by= list(ReachName = redds$ReachName, Tributary = redds$Tributary, Season = redds$Season, Species = redds$Species), FUN = length)
-myColors<-brewer.pal(6,"Set1")
+myColors<-brewer.pal(5,"Set1")
 names(myColors)<-unique(fish$Species)
 colScale<-scale_color_manual(name="Species", values = myColors)
 fillScale<-scale_fill_manual(name="Species", values = myColors)
@@ -58,12 +59,12 @@ mostRecentTrip<-inner_join(TripCounts, mostRecentTrip, by = c("ReachName", "Trib
 
 #GreenValleyPlot <- tripData %>% filter(REACHNAME == selectedReach)%>% ggplot(aes(x=DATE, y = FISHING)) + geom_point()+ scale_x_date()
 #GreenValleyPlot + geom_line(data = flowData, aes(DATE, MIL.School..ft..))
-CrewNames<-c("ZR","WB","CO","MT","LE","AMJ","NB","AB","AM","AI", "SB", "JP", "KS","RA", "BA")
-CrewCounts<-data.frame(FishTotals=numeric(15), ReddTotals=numeric(15))
+CrewNames<-c("ZR","WB","CO","MT","LE","AMJ","NB","AB","AM ","AI", "SB", "JP", "KS","RA", "BA", "JRR", "AJ")
+CrewCounts<-data.frame(FishTotals=numeric(17), ReddTotals=numeric(17), CombinedTotals=numeric(17))
 surveyedReaches<-unique(tripData$ReachName)
 #surveyedReaches<- as.vector.factor(surveyedReaches)
 surveyedReaches<-sort(surveyedReaches)
-
+surveyedReaches<-append(surveyedReaches, "ALL", 0)
 seasonList<- unique(redds$Season)
 seasonList<- sort(seasonList, decreasing = TRUE)
 
@@ -95,10 +96,7 @@ ui<- fluidPage(
     # Show a plot of the generated distribution
     mainPanel(
       tabsetPanel( type = "tabs",
-                   tabPanel("Surveyability", htmlOutput("maxflow"), plotlyOutput("HydroGraphPlot"),
-                            
-                            DT::dataTableOutput("fishTable")),
-                   tabPanel("DaysSinceSurveyed", DT::dataTableOutput("mostRecentSurveyTable")),
+                   
                    tabPanel("Fish And Redd Counts",
                              
                             selectInput("Season",
@@ -106,7 +104,11 @@ ui<- fluidPage(
                                         seasonList, selected = "2016-2017"),
                             htmlOutput("NumberOfFish"), plotOutput("fishGraph"), htmlOutput("NumberOfRedds"), plotOutput("reddGraph")), 
                    tabPanel("Crew Totals", selectInput("Crew","Crew:", CrewNames),htmlOutput("CrewNumberOfFish"), plotOutput("CrewfishGraph"), htmlOutput("CrewNumberOfRedds"), plotOutput("CrewreddGraph")),
-                   tabPanel("Crew Leader Boards", selectInput("SpeciesSelected", "Species:", speciesList2), DT::dataTableOutput("CrewLeaderBoard"))
+                   tabPanel("Crew Leader Boards", selectInput("SpeciesSelected", "Species:", speciesList2, selected = "ALL"), DT::dataTableOutput("CrewLeaderBoard")),
+                   tabPanel("Surveyability", htmlOutput("maxflow"), plotlyOutput("HydroGraphPlot"),
+                            
+                            DT::dataTableOutput("fishTable")),
+                   tabPanel("DaysSinceSurveyed", DT::dataTableOutput("mostRecentSurveyTable"))
                    ))
     
     
@@ -115,41 +117,71 @@ ui<- fluidPage(
 server<- function(input, output) {
   
   output$maxflow <-renderUI({
+    if (input$Reach == "ALL"){
+      HTML(paste("<p> <br> </p> <b> Please select a specific reach</b> ")) 
+    } else {
     FilteredData<- filter(mergedData, ReachName == input$Reach)
     maxSurveyedCFS<- max(FilteredData[input$Gauge], na.rm = TRUE)
     HTML(paste("<p> <br> </p> <b> This reach has been surveyed at a maximum gauge height of:", maxSurveyedCFS,"</b> "))
-  })
+  }})
   
   output$uploadDate<- renderUI({
     HTML(paste("<p> <br> </p> <b> Data current through: <p> <br> </p>", uploadDate,"</b> "))
   })
   
   output$fishGraph <- renderPlot({
-    FishNumber<-fish%>%filter(Season==input$Season)%>%filter(ReachName == input$Reach)%>%nrow()
+    if (input$Reach == "ALL"){
+     
+      
+        
+        fishplot2<-fish%>%filter(Season==input$Season)%>%ggplot(aes(Species, fill = Species))+ geom_bar(width = .75)+theme_classic()+theme(axis.text = element_text(face = "bold", hjust = .5, size = 12), axis.title.x = element_blank(), axis.title.y = element_blank(), plot.title = element_text(face = "bold", hjust = .5, size = 16),  legend.title = element_text(face = "bold", hjust = .5, size = 12) )+ ggtitle("Total Fish Seen")+ stat_count(aes(y = ..count.. /1.5  , label=..count..), vjust= 0, size = 6, geom="text", position="identity")+ fillScale + scale_x_discrete(limits=speciesList) + scale_y_continuous(breaks=pretty_breaks(n = 3, min.n=0)) 
+        
+        fishplot2
+        
+      } else {
+        
+     FishNumber<-fish%>%filter(Season==input$Season)%>%filter(ReachName == input$Reach)%>%nrow()
     if (FishNumber>0){
     
-      fishplot<-fish%>%filter(Season==input$Season)%>%filter(ReachName == input$Reach)%>%ggplot(aes(Species, fill = Species))+ geom_bar(width = .75)+theme_classic()+theme(axis.text = element_text(face = "bold", hjust = .5, size = 12), axis.title.x = element_blank(), axis.title.y = element_blank(), plot.title = element_text(face = "bold", hjust = .5, size = 16),  legend.title = element_text(face = "bold", hjust = .5, size = 12) )+ ggtitle("Live Fish Seen")+stat_count(aes(y = ..count.. /1.5  , label=..count..), vjust= 0, size = 6, geom="text", position="identity")+ fillScale + scale_x_discrete(limits=speciesList) + scale_y_continuous(breaks=pretty_breaks(n = 3, min.n=0)) 
+      fishplot<-fish%>%filter(Season==input$Season)%>%filter(ReachName == input$Reach)%>%ggplot(aes(Species, fill = Species))+ geom_bar(width = .75)+theme_classic()+theme(axis.text = element_text(face = "bold", hjust = .5, size = 12), axis.title.x = element_blank(), axis.title.y = element_blank(), plot.title = element_text(face = "bold", hjust = .5, size = 16),  legend.title = element_text(face = "bold", hjust = .5, size = 12) )+ ggtitle("Total Fish Seen")+stat_count(aes(y = ..count.. /1.5  , label=..count..), vjust= 0, size = 6, geom="text", position="identity")+ fillScale + scale_x_discrete(limits=speciesList) + scale_y_continuous(breaks=pretty_breaks(n = 3, min.n=0)) 
   # fishplotly<-ggplotly( fishplot)
   # fishplotly
       fishplot
   
     } else return(NULL)   
-    }
+      }
+     }
     
   )
   
   output$NumberOfFish <- renderUI({
+    
+    if (input$Reach == "ALL"){
+      FishNumbers<-fish%>%filter(Season==input$Season)%>%nrow()
+      
+      
+      if(input$Season == "2016-2017"){
+        if(FishNumbers>0){
+          HTML(paste("<p> <br> </p> <b> There have been ", FishNumbers,"  total fish (including carcasses) seen in the", input$Season,"season </b> ")) 
+        } else HTML(paste("<p> <br> </p> <b> There have been no fish seen this season </b> "))
+      } else if(FishNumbers>0){
+        HTML(paste("<p> <br> </p> <b> There were ", FishNumbers,"  total fish (including carcasses) seen in the", input$Season,"season </b> ")) 
+      } else HTML(paste("<p> <br> </p> <b> There were no fish seen on in the", input$Season,"season </b> "))
+    
+      
+    } else {
+    
     FishNumbers<-fish%>%filter(Season==input$Season)%>%filter(ReachName == input$Reach)%>%nrow()
     
     
     if(input$Season == "2016-2017"){
     if(FishNumbers>0){
-      HTML(paste("<p> <br> </p> <b> There have been ", FishNumbers,"  total fish seen on ", input$Reach, "in the", input$Season,"season </b> ")) 
+      HTML(paste("<p> <br> </p> <b> There have been ", FishNumbers,"  total fish (including carcasses) seen on ", input$Reach, "in the", input$Season,"season </b> ")) 
     } else HTML(paste("<p> <br> </p> <b> There have been no fish seen on ", input$Reach, " this season </b> "))
     } else if(FishNumbers>0){
-      HTML(paste("<p> <br> </p> <b> There were ", FishNumbers,"  total fish seen on ", input$Reach, "in the", input$Season,"season </b> ")) 
+      HTML(paste("<p> <br> </p> <b> There were ", FishNumbers,"  total fish (including carcasses) seen on ", input$Reach, "in the", input$Season,"season </b> ")) 
     } else HTML(paste("<p> <br> </p> <b> There were no fish seen on ", input$Reach, "in the", input$Season,"season </b> "))
-  }
+  }}
   ) 
   output$CrewfishGraph <- renderPlot({
     FishNumber<-fish%>%filter(Season == "2016-2017")%>%filter(grepl(input$Crew, Crew))%>%nrow()
@@ -179,6 +211,17 @@ server<- function(input, output) {
   }
   )  
   output$NumberOfRedds <- renderUI({
+    if (input$Reach == "ALL"){
+      ReddNumbers<-redds%>%filter(Season==input$Season)%>%filter(ReddAge == 1)%>%nrow()
+      
+      
+      if(input$Season == "2016-2017"){
+        if(ReddNumbers>0){
+          HTML(paste("<p> <br> </p> <b> There have been ", ReddNumbers,"  total redds seen in the", input$Season," season </b> ")) 
+        } else HTML(paste("<p> <br> </p> <b> There have been no redds seen this season </b> "))} else if(ReddNumbers>0){
+          HTML(paste("<p> <br> </p> <b> There were ", ReddNumbers,"  total redds seen in the", input$Season," season </b> ")) 
+        } else HTML(paste("<p> <br> </p> <b> There were no redds seen in the", input$Season," season </b> "))
+    } else {
     ReddNumbers<-redds%>%filter(Season==input$Season)%>%filter(ReddAge == 1)%>%filter(ReachName == input$Reach)%>%nrow()
     
     
@@ -188,10 +231,14 @@ server<- function(input, output) {
     } else HTML(paste("<p> <br> </p> <b> There have been no redds seen on ", input$Reach, " this season </b> "))} else if(ReddNumbers>0){
       HTML(paste("<p> <br> </p> <b> There were ", ReddNumbers,"  total redds seen on ", input$Reach, " in the", input$Season," season </b> ")) 
     } else HTML(paste("<p> <br> </p> <b> There were no redds seen on ", input$Reach, " in the", input$Season," season </b> "))
-  }
+  }}
   ) 
   
   output$reddGraph<- renderPlot({
+    if (input$Reach == "ALL"){
+      reddplot<-redds%>%filter(Season==input$Season)%>%filter(ReddAge == 1)%>%ggplot(aes(Species, fill = Species))+ geom_bar(width = .75)+theme_classic()+theme(axis.text = element_text(face = "bold", hjust = .5, size = 12), axis.title.x = element_blank(), axis.title.y = element_blank(), plot.title = element_text(face = "bold", hjust = .5, size = 16),  legend.title = element_text(face = "bold", hjust = .5, size = 12) )+ ggtitle("Redds Seen")+stat_count(aes(y = ..count.. /1.5  , label=..count..), vjust= 0, size = 6, geom="text", position="identity")+ fillScale + scale_x_discrete(limits=speciesList) + scale_y_continuous(breaks=pretty_breaks(n = 3, min.n=0)) 
+      reddplot
+      } else {
     ReddNumber <- redds%>%filter(Season==input$Season)%>%filter(ReddAge == 1)%>%filter(ReachName == input$Reach)%>%nrow()
     if (ReddNumber>0){
     reddplot<-redds%>%filter(Season==input$Season)%>%filter(ReddAge == 1)%>%filter(ReachName == input$Reach)%>%ggplot(aes(Species, fill = Species))+ geom_bar(width = .75)+theme_classic()+theme(axis.text = element_text(face = "bold", hjust = .5, size = 12), axis.title.x = element_blank(), axis.title.y = element_blank(), plot.title = element_text(face = "bold", hjust = .5, size = 16),  legend.title = element_text(face = "bold", hjust = .5, size = 12) )+ ggtitle("Redds Seen")+stat_count(aes(y = ..count.. /1.5  , label=..count..), vjust= 0, size = 6, geom="text", position="identity")+ fillScale + scale_x_discrete(limits=speciesList) + scale_y_continuous(breaks=pretty_breaks(n = 3, min.n=0)) 
@@ -200,7 +247,7 @@ server<- function(input, output) {
     reddplot
    
     } else return(NULL)
-  })
+  }})
   output$CrewNumberOfRedds <- renderUI({
     CrewReddNumbers<-redds%>%filter(Season==input$Season)%>%filter(ReddAge == 1)%>%filter(grepl(input$Crew, Crew))%>%nrow()
     
@@ -242,13 +289,15 @@ server<- function(input, output) {
   # maxSurveyedCFS
   # })
   output$HydroGraphPlot <- renderPlotly({
-    
+    if (input$Reach == "ALL"){
+      return(NULL)
+    } else {
     FilteredData2<- mergedData %>% filter(ReachName == input$Reach)
     maxGaugeHeight <- max(FilteredData2[input$Gauge], na.rm = TRUE)
     flowGraph <- mergedData %>% filter(ReachName == input$Reach)%>% ggplot(aes_string(x="DATE", y = input$Gauge)) + theme_minimal() + geom_point(aes(color=Fishing, shape = Fishing), size = 6)+ scale_color_manual(values = c("0" = "red", "1"= "green")) + scale_shape_manual(values = c("0" = 4, "1" = 11))+ scale_x_date(limits = c(input$startDate,input$enddate)) + geom_line(data = flowData, aes_string("DATE", input$Gauge))
     plotlygraph <- ggplotly(flowGraph)
     plotlygraph
-  })
+  }})
   output$CrewLeaderBoard = renderDataTable({
     i=1
     if(input$SpeciesSelected=="ALL"){
@@ -258,18 +307,20 @@ server<- function(input, output) {
         CrewCounts$ReddTotals[i]<-redds%>% filter(Season == "2016-2017")%>%filter(ReddAge == 1)%>%filter(grepl(name, Crew))%>%nrow()
         i=i+1
       }
+      CrewCounts$CombinedTotals<-CrewCounts$FishTotals + CrewCounts$ReddTotals
       
-      
-      DT::datatable(CrewCounts, colnames = c("Crew", "Fish Total", "Redd Total"), rownames = FALSE, options = list(pageLength= 15, order=list(1,'desc')))
+      DT::datatable(CrewCounts, colnames = c("Crew", "Fish Total", "Redd Total", "Combined Total"), rownames = FALSE, options = list( pageLength= 17, order=list(3,'desc')))
     } else for (name in CrewNames){
       CrewCounts$CrewName[i] = name
       CrewCounts$FishTotals[i]<-fish %>% filter(Season == "2016-2017")%>%filter(grepl(name, Crew))%>%filter(Species == input$SpeciesSelected)%>%nrow()
       CrewCounts$ReddTotals[i]<-redds%>% filter(Season == "2016-2017")%>%filter(ReddAge == 1)%>%filter(grepl(name, Crew))%>%filter(Species == input$SpeciesSelected)%>%nrow()
+      
       i=i+1
     }
-    CrewCounts<-CrewCounts[,c(3,1,2)]
+    CrewCounts$CombinedTotals<-CrewCounts$FishTotals + CrewCounts$ReddTotals
+    CrewCounts<-CrewCounts[,c(4,1,2,3)]
     
-    DT::datatable(CrewCounts, colnames = c("Crew", "Fish Total", "Redd Total"), rownames = FALSE, options = list(pageLength= 15, order=list(1,'desc')))
+    DT::datatable(CrewCounts, colnames = c("Crew", "Fish Total", "Redd Total", "Combined Total"), rownames = FALSE, options = list(pageLength= 17,  order=list(3,'desc')))
   })
   
 }

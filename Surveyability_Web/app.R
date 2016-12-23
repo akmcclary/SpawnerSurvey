@@ -35,6 +35,7 @@ colScale<-scale_color_manual(name="Species", values = myColors)
 fillScale<-scale_fill_manual(name="Species", values = myColors)
 
 speciesList<-c("COHO SALMON", "SALMONID SP", "STEELHEAD", "CHINOOK SALMON", "PACIFIC LAMPREY")
+speciesList2<-c("COHO SALMON", "SALMONID SP", "STEELHEAD", "CHINOOK SALMON", "PACIFIC LAMPREY", "ALL")
 
 gaugeNames<-c(colnames(flowData))
 gaugeNames<-gaugeNames[2:14]
@@ -58,7 +59,7 @@ mostRecentTrip<-inner_join(TripCounts, mostRecentTrip, by = c("ReachName", "Trib
 #GreenValleyPlot <- tripData %>% filter(REACHNAME == selectedReach)%>% ggplot(aes(x=DATE, y = FISHING)) + geom_point()+ scale_x_date()
 #GreenValleyPlot + geom_line(data = flowData, aes(DATE, MIL.School..ft..))
 CrewNames<-c("ZR","WB","CO","MT","LE","AMJ","NB","AB","AM","AI", "SB", "JP", "KS","RA", "BA")
-
+CrewCounts<-data.frame(FishTotals=numeric(15), ReddTotals=numeric(15))
 surveyedReaches<-unique(tripData$ReachName)
 #surveyedReaches<- as.vector.factor(surveyedReaches)
 surveyedReaches<-sort(surveyedReaches)
@@ -103,8 +104,10 @@ ui<- fluidPage(
                             selectInput("Season",
                                         "Season:",
                                         seasonList, selected = "2016-2017"),
-                            htmlOutput("NumberOfFish"), plotOutput("fishGraph"), htmlOutput("NumberOfRedds"), plotOutput("reddGraph")), tabPanel("Crew Totals", selectInput("Crew","Crew:", CrewNames),htmlOutput("CrewNumberOfFish"), plotOutput("CrewfishGraph"), htmlOutput("CrewNumberOfRedds"), plotOutput("CrewreddGraph"))
-      ))
+                            htmlOutput("NumberOfFish"), plotOutput("fishGraph"), htmlOutput("NumberOfRedds"), plotOutput("reddGraph")), 
+                   tabPanel("Crew Totals", selectInput("Crew","Crew:", CrewNames),htmlOutput("CrewNumberOfFish"), plotOutput("CrewfishGraph"), htmlOutput("CrewNumberOfRedds"), plotOutput("CrewreddGraph")),
+                   tabPanel("Crew Leader Boards", selectInput("SpeciesSelected", "Species:", speciesList2), DT::dataTableOutput("CrewLeaderBoard"))
+                   ))
     
     
   )
@@ -245,6 +248,28 @@ server<- function(input, output) {
     flowGraph <- mergedData %>% filter(ReachName == input$Reach)%>% ggplot(aes_string(x="DATE", y = input$Gauge)) + theme_minimal() + geom_point(aes(color=Fishing, shape = Fishing), size = 6)+ scale_color_manual(values = c("0" = "red", "1"= "green")) + scale_shape_manual(values = c("0" = 4, "1" = 11))+ scale_x_date(limits = c(input$startDate,input$enddate)) + geom_line(data = flowData, aes_string("DATE", input$Gauge))
     plotlygraph <- ggplotly(flowGraph)
     plotlygraph
+  })
+  output$CrewLeaderBoard = renderDataTable({
+    i=1
+    if(input$SpeciesSelected=="ALL"){
+      for (name in CrewNames){
+        CrewCounts$CrewName[i] = name
+        CrewCounts$FishTotals[i]<-fish %>% filter(Season == "2016-2017")%>%filter(grepl(name, Crew))%>%nrow()
+        CrewCounts$ReddTotals[i]<-redds%>% filter(Season == "2016-2017")%>%filter(ReddAge == 1)%>%filter(grepl(name, Crew))%>%nrow()
+        i=i+1
+      }
+      
+      
+      DT::datatable(CrewCounts, colnames = c("Crew", "Fish Total", "Redd Total"), rownames = FALSE, options = list(pageLength= 15, order=list(1,'desc')))
+    } else for (name in CrewNames){
+      CrewCounts$CrewName[i] = name
+      CrewCounts$FishTotals[i]<-fish %>% filter(Season == "2016-2017")%>%filter(grepl(name, Crew))%>%filter(Species == input$SpeciesSelected)%>%nrow()
+      CrewCounts$ReddTotals[i]<-redds%>% filter(Season == "2016-2017")%>%filter(ReddAge == 1)%>%filter(grepl(name, Crew))%>%filter(Species == input$SpeciesSelected)%>%nrow()
+      i=i+1
+    }
+    CrewCounts<-CrewCounts[,c(3,1,2)]
+    
+    DT::datatable(CrewCounts, colnames = c("Crew", "Fish Total", "Redd Total"), rownames = FALSE, options = list(pageLength= 15, order=list(1,'desc')))
   })
   
 }

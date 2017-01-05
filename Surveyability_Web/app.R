@@ -303,53 +303,104 @@ server<- function(input, output) {
   
   
   output$NumberOfRedds <- renderUI({
-    if(input$Season=="ALL"){
-      if(input$Tributary=="ALL"){
-        if(input$Reach=="ALL"){
-          
-          #FIGURE THIS OUT LATER EVERYONE IS BEING TOO FUCKING LOUD
-          
-          }
-      }
-    }
+    if(input$Season=="ALL"){  
+          return(NULL)
+    }else {
     #Break between the facetted graphs and the single graphs
-    else {
-      ReddNumbers<-redds%>%filter(Season==input$Season)%>%filter(ReddAge == 1)%>%nrow()
+    
+      if (input$Tributary=="ALL"){ 
+        if (input$Reach=="ALL"){
+        ReddNumbers<-redds%>%filter(Season==input$Season)%>%filter(ReddAge == 1)%>%nrow()
       
       
-      if(input$Season == "2016-2017"){
-        if(ReddNumbers>0){
-          HTML(paste("<p> <br> </p> <b> There have been ", ReddNumbers,"  total redds seen in the", input$Season," season </b> ")) 
-        } else HTML(paste("<p> <br> </p> <b> There have been no redds seen this season </b> "))} else if(ReddNumbers>0){
-          HTML(paste("<p> <br> </p> <b> There were ", ReddNumbers,"  total redds seen in the", input$Season," season </b> ")) 
-        } else HTML(paste("<p> <br> </p> <b> There were no redds seen in the", input$Season," season </b> "))
-    } else {
-      ReddNumbers<-redds%>%filter(Season==input$Season)%>%filter(ReddAge == 1)%>%filter(ReachName == input$Reach)%>%nrow()
-      
-      
-      if(input$Season == "2016-2017"){
-        if(ReddNumbers>0){
-          HTML(paste("<p> <br> </p> <b> There have been ", ReddNumbers,"  total redds seen on ", input$Reach, " in the", input$Season," season </b> ")) 
-        } else HTML(paste("<p> <br> </p> <b> There have been no redds seen on ", input$Reach, " this season </b> "))} else if(ReddNumbers>0){
-          HTML(paste("<p> <br> </p> <b> There were ", ReddNumbers,"  total redds seen on ", input$Reach, " in the", input$Season," season </b> ")) 
-        } else HTML(paste("<p> <br> </p> <b> There were no redds seen on ", input$Reach, " in the", input$Season," season </b> "))
-    }}}
+          if(input$Season == "2016-2017"){
+            if(ReddNumbers>0){
+            HTML(paste("<p> <br> </p> <b> There have been ", ReddNumbers,"  total redds seen in the", input$Season," season </b> ")) 
+            } else HTML(paste("<p> <br> </p> <b> There have been no redds seen this season </b> "))} else if(ReddNumbers>0){
+  #Previous years totals
+            HTML(paste("<p> <br> </p> <b> There were ", ReddNumbers,"  total redds seen in the", input$Season," season </b> ")) 
+           } else HTML(paste("<p> <br> </p> <b> There were no redds seen in the", input$Season," season </b> "))
+         } else {
+  #Filtered by Reach and Tributary
+            ReddNumbers<-redds%>%filter(Season==input$Season)%>%filter(ReddAge == 1)%>%filter(Tributary == input$Tributary)%>%filter(ReachName == input$Reach)%>%nrow()
+            if(input$Season == "2016-2017"){
+            if(ReddNumbers>0){
+            HTML(paste("<p> <br> </p> <b> There have been ", ReddNumbers,"  total redds seen on ", input$Reach, " in the", input$Season," season </b> ")) 
+            } else HTML(paste("<p> <br> </p> <b> There have been no redds seen on ", input$Reach, " this season </b> "))} else if(ReddNumbers>0){
+            HTML(paste("<p> <br> </p> <b> There were ", ReddNumbers,"  total redds seen on ", input$Reach, " in the", input$Season," season </b> ")) 
+            } else HTML(paste("<p> <br> </p> <b> There were no redds seen on ", input$Reach, " in the", input$Season," season </b> "))
+         }} else{ 
+#Filtered by just Tributary
+           ReddNumbers<-redds%>%filter(Season==input$Season)%>%filter(ReddAge == 1)%>%filter(Tributary == input$Tributary)%>%nrow()
+           if(input$Season == "2016-2017"){
+             if(ReddNumbers>0){
+               HTML(paste("<p> <br> </p> <b> There have been ", ReddNumbers,"  total redds seen on ", input$Tributary, " in the", input$Season," season </b> ")) 
+             } else HTML(paste("<p> <br> </p> <b> There have been no redds seen on ", input$Tributary, " this season </b> "))} else if(ReddNumbers>0){
+               HTML(paste("<p> <br> </p> <b> There were ", ReddNumbers,"  total redds seen on ", input$Tributary, " in the", input$Season," season </b> ")) 
+             } else HTML(paste("<p> <br> </p> <b> There were no redds seen on ", input$Tributary, " in the", input$Season," season </b> "))
+         }
+        }}
   ) 
   
   output$reddGraph<- renderPlot({
-    if (input$Reach == "ALL"){
-      reddplot<-redds%>%filter(Season==input$Season)%>%filter(ReddAge == 1)%>%ggplot(aes(Species, fill = Species))+ geom_bar(width = .75)+theme_classic()+theme(axis.text = element_text(face = "bold", hjust = .5, size = 12), axis.title.x = element_blank(), axis.title.y = element_blank(), plot.title = element_text(face = "bold", hjust = .5, size = 16),  legend.title = element_text(face = "bold", hjust = .5, size = 12) )+ ggtitle("Redds Seen")+stat_count(aes(y = ..count.. /1.5  , label=..count..), vjust= 0, size = 6, geom="text", position="identity")+ fillScale + scale_x_discrete(limits=speciesList) + scale_y_continuous(breaks=pretty_breaks(n = 3, min.n=0)) 
-      reddplot
-    } else {
-      ReddNumber <- redds%>%filter(Season==input$Season)%>%filter(ReddAge == 1)%>%filter(ReachName == input$Reach)%>%nrow()
-      if (ReddNumber>0){
-        reddplot<-redds%>%filter(Season==input$Season)%>%filter(ReddAge == 1)%>%filter(ReachName == input$Reach)%>%ggplot(aes(Species, fill = Species))+ geom_bar(width = .75)+theme_classic()+theme(axis.text = element_text(face = "bold", hjust = .5, size = 12), axis.title.x = element_blank(), axis.title.y = element_blank(), plot.title = element_text(face = "bold", hjust = .5, size = 16),  legend.title = element_text(face = "bold", hjust = .5, size = 12) )+ ggtitle("Redds Seen")+stat_count(aes(y = ..count.. /1.5  , label=..count..), vjust= 0, size = 6, geom="text", position="identity")+ fillScale + scale_x_discrete(limits=speciesList) + scale_y_continuous(breaks=pretty_breaks(n = 3, min.n=0)) 
-        # reddplotly<-ggplotly(reddplot)
-        # reddplotly
-        reddplot
-        
-      } else return(NULL)
-    }})
+    if (input$Season=="ALL"){
+      if (input$Tributary=="ALL"){
+        if (input$SpeciesOrSeason=="Season"){
+          reddplot<-redds%>%filter(ReddAge == 1)%>%ggplot(aes(Species, fill = Species))+ geom_bar(width = .75)+theme_classic()+theme(axis.text = element_text(face = "bold", hjust = .5, size = 12), axis.title.x = element_blank(), axis.title.y = element_blank(), plot.title = element_text(face = "bold", hjust = .5, size = 16),  legend.title = element_text(face = "bold", hjust = .5, size = 12) )+ ggtitle("Redds Seen")+stat_count(aes(y = ..count.. /1.5  , label=..count..), vjust= 0, size = 6, geom="text", position="identity")+ fillScale + scale_x_discrete(limits=speciesList) + scale_y_continuous(breaks=pretty_breaks(n = 3, min.n=0)) +facet_wrap(~Season)
+          reddplot
+       }else {
+          reddplot<-redds%>%filter(ReddAge == 1)%>%ggplot(aes(Season, fill = Species))+ geom_bar(width = .75)+theme_classic()+theme(axis.text = element_text(face = "bold", hjust = .5, size = 12), axis.title.x = element_blank(), axis.title.y = element_blank(), plot.title = element_text(face = "bold", hjust = .5, size = 16),  legend.title = element_text(face = "bold", hjust = .5, size = 12) )+ ggtitle("Redds Seen")+stat_count(aes(y = ..count.. /1.5  , label=..count..), vjust= 0, size = 6, geom="text", position="identity")+ fillScale + scale_y_continuous(breaks=pretty_breaks(n = 3, min.n=0))+facet_wrap(~Species)
+          reddplot
+       }}else{
+         if (input$Reach=="ALL"){
+           reddNumber<-redds%>%filter(ReddAge==1)%>%filter(Tributary==input$Tributary)%>%nrow()
+           if(reddNumber>0){
+           if (input$SpeciesOrSeason=="Season"){
+             reddplot<-redds%>%filter(ReddAge == 1)%>%filter(Tributary==input$Tributary)%>%ggplot(aes(Species, fill = Species))+ geom_bar(width = .75)+theme_classic()+theme(axis.text = element_text(face = "bold", hjust = .5, size = 12), axis.title.x = element_blank(), axis.title.y = element_blank(), plot.title = element_text(face = "bold", hjust = .5, size = 16),  legend.title = element_text(face = "bold", hjust = .5, size = 12) )+ ggtitle("Redds Seen")+stat_count(aes(y = ..count.. /1.5  , label=..count..), vjust= 0, size = 6, geom="text", position="identity")+ fillScale + scale_x_discrete(limits=speciesList) + scale_y_continuous(breaks=pretty_breaks(n = 3, min.n=0)) +facet_wrap(~Season)
+             reddplot
+             }else { 
+             reddplot<-redds%>%filter(ReddAge == 1)%>%filter(Tributary==input$Tributary)%>%ggplot(aes(Season, fill = Species))+ geom_bar(width = .75)+theme_classic()+theme(axis.text = element_text(face = "bold", hjust = .5, size = 12), axis.title.x = element_blank(), axis.title.y = element_blank(), plot.title = element_text(face = "bold", hjust = .5, size = 16),  legend.title = element_text(face = "bold", hjust = .5, size = 12) )+ ggtitle("Redds Seen")+stat_count(aes(y = ..count.. /1.5  , label=..count..), vjust= 0, size = 6, geom="text", position="identity")+ fillScale + scale_y_continuous(breaks=pretty_breaks(n = 3, min.n=0))+facet_wrap(~Species)
+             reddplot
+             }} else return(NULL)
+         }else {
+           reddNumber<-redds%>%filter(ReddAge==1)%>%filter(Tributary==input$Tributary)%>%filter(ReachName==input$Reach)%>%nrow()
+           if(reddNumber>0){
+             if (input$SpeciesOrSeason=="Season"){
+               reddplot<-redds%>%filter(ReddAge == 1)%>%filter(Tributary==input$Tributary)%>%filter(ReachName==input$Reach)%>%ggplot(aes(Species, fill = Species))+ geom_bar(width = .75)+theme_classic()+theme(axis.text = element_text(face = "bold", hjust = .5, size = 12), axis.title.x = element_blank(), axis.title.y = element_blank(), plot.title = element_text(face = "bold", hjust = .5, size = 16),  legend.title = element_text(face = "bold", hjust = .5, size = 12) )+ ggtitle("Redds Seen")+stat_count(aes(y = ..count.. /1.5  , label=..count..), vjust= 0, size = 6, geom="text", position="identity")+ fillScale + scale_x_discrete(limits=speciesList) + scale_y_continuous(breaks=pretty_breaks(n = 3, min.n=0)) +facet_wrap(~Season)
+               reddplot
+             }else { 
+               reddplot<-redds%>%filter(ReddAge == 1)%>%filter(Tributary==input$Tributary%>%filter(ReachName==input$Reach))%>%ggplot(aes(Season, fill = Species))+ geom_bar(width = .75)+theme_classic()+theme(axis.text = element_text(face = "bold", hjust = .5, size = 12), axis.title.x = element_blank(), axis.title.y = element_blank(), plot.title = element_text(face = "bold", hjust = .5, size = 16),  legend.title = element_text(face = "bold", hjust = .5, size = 12) )+ ggtitle("Redds Seen")+stat_count(aes(y = ..count.. /1.5  , label=..count..), vjust= 0, size = 6, geom="text", position="identity")+ fillScale + scale_y_continuous(breaks=pretty_breaks(n = 3, min.n=0))+facet_wrap(~Species)
+               reddplot
+             }} else return(NULL)
+           }
+         
+       }}else{
+#Season is not ALL
+    if (input$Tributary == "ALL"){  
+  #Maybe fix this if I make the reach drop down dependent on choosing a tributary
+        if (input$Reach == "ALL"){
+        reddplot<-redds%>%filter(Season==input$Season)%>%filter(ReddAge == 1)%>%ggplot(aes(Species, fill = Species))+ geom_bar(width = .75)+theme_classic()+theme(axis.text = element_text(face = "bold", hjust = .5, size = 12), axis.title.x = element_blank(), axis.title.y = element_blank(), plot.title = element_text(face = "bold", hjust = .5, size = 16),  legend.title = element_text(face = "bold", hjust = .5, size = 12) )+ ggtitle("Redds Seen")+stat_count(aes(y = ..count.. /1.5  , label=..count..), vjust= 0, size = 6, geom="text", position="identity")+ fillScale + scale_x_discrete(limits=speciesList) + scale_y_continuous(breaks=pretty_breaks(n = 3, min.n=0)) 
+        reddplot } else {
+          #Reach is not all
+        ReddNumber <- redds%>%filter(Season==input$Season)%>%filter(ReddAge == 1)%>%filter(ReachName == input$Reach)%>%nrow()
+          if (ReddNumber>0){
+            reddplot<-redds%>%filter(Season==input$Season)%>%filter(ReddAge == 1)%>%filter(ReachName == input$Reach)%>%ggplot(aes(Species, fill = Species))+ geom_bar(width = .75)+theme_classic()+theme(axis.text = element_text(face = "bold", hjust = .5, size = 12), axis.title.x = element_blank(), axis.title.y = element_blank(), plot.title = element_text(face = "bold", hjust = .5, size = 16),  legend.title = element_text(face = "bold", hjust = .5, size = 12) )+ ggtitle("Redds Seen")+stat_count(aes(y = ..count.. /1.5  , label=..count..), vjust= 0, size = 6, geom="text", position="identity")+ fillScale + scale_x_discrete(limits=speciesList) + scale_y_continuous(breaks=pretty_breaks(n = 3, min.n=0)) 
+            reddplot} else return(NULL)
+        }
+      
+    }else{
+#Tributary is not All
+        if (input$Reach == "ALL"){
+        reddplot<-redds%>%filter(Season==input$Season)%>%filter(ReddAge == 1)%>%filter(Tributary==input$Tributary)%>%ggplot(aes(Species, fill = Species))+ geom_bar(width = .75)+theme_classic()+theme(axis.text = element_text(face = "bold", hjust = .5, size = 12), axis.title.x = element_blank(), axis.title.y = element_blank(), plot.title = element_text(face = "bold", hjust = .5, size = 16),  legend.title = element_text(face = "bold", hjust = .5, size = 12) )+ ggtitle("Redds Seen")+stat_count(aes(y = ..count.. /1.5  , label=..count..), vjust= 0, size = 6, geom="text", position="identity")+ fillScale + scale_x_discrete(limits=speciesList) + scale_y_continuous(breaks=pretty_breaks(n = 3, min.n=0)) 
+        reddplot } else {
+          #Reach is not ALL
+          ReddNumber <- redds%>%filter(Season==input$Season)%>%filter(ReddAge == 1)%>%filter(Tributary==input$Tributary)%>%filter(ReachName == input$Reach)%>%nrow()
+          if (ReddNumber>0){
+            reddplot<-redds%>%filter(Season==input$Season)%>%filter(ReddAge == 1)%>%filter(Tributary==input$Tributary)%>%filter(ReachName == input$Reach)%>%ggplot(aes(Species, fill = Species))+ geom_bar(width = .75)+theme_classic()+theme(axis.text = element_text(face = "bold", hjust = .5, size = 12), axis.title.x = element_blank(), axis.title.y = element_blank(), plot.title = element_text(face = "bold", hjust = .5, size = 16),  legend.title = element_text(face = "bold", hjust = .5, size = 12) )+ ggtitle("Redds Seen")+stat_count(aes(y = ..count.. /1.5  , label=..count..), vjust= 0, size = 6, geom="text", position="identity")+ fillScale + scale_x_discrete(limits=speciesList) + scale_y_continuous(breaks=pretty_breaks(n = 3, min.n=0)) 
+            reddplot} else return(NULL)
+      }   
+        }
+          }})
   
   #Crew Tab
   output$CrewfishGraph <- renderPlot({

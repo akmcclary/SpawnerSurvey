@@ -78,7 +78,7 @@ gaugeList <- gaugeList[-1]
 
 ui<- fluidPage(
   theme="bootstrap.css",
-  titlePanel("Spawner Surveys"),
+  titlePanel(htmlOutput("uploadDate")),
   tabsetPanel( type = "tabs",
     tabPanel("Fish And Redd Counts", selectInput("Tributary", "Tributary:", surveyedTributaries), uiOutput("reachSelect"), uiOutput("selectSeasonOrSpecies"),
       selectInput("Season", "Season:", seasonList, selected = "2016-2017"), htmlOutput("NumberOfFish"), 
@@ -119,7 +119,7 @@ server<- function(input, output) {
     
   #Put in Header
   output$uploadDate<- renderUI({
-    HTML(paste("<p> <br> </p> <b> Data current through: <p> <br> </p>", uploadDate,"</b> "))
+    HTML(paste("<b> Data current through:", uploadDate,"</b> "))
   })
   
   #Fish and Redds but maybe also for surveyability etc..

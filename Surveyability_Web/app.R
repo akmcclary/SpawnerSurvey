@@ -26,6 +26,7 @@ flowData$DATE<-mdy(flowData$DATE)
 fish<-mutate_each(fish,funs(toupper))
 redds<-mutate_each(redds,funs(toupper))
 tripData<-tripData%>%mutate_each(funs(toupper),Tributary)
+
 uploadDate<-max(tripData$DATE)
 fish<-filter(fish, Species != "-9999")
 #FishTotals<-aggregate(fish, by= list(ReachName = fish$ReachName, Tributary = fish$Tributary, Season = fish$Season, Species = fish$Species), FUN = length)

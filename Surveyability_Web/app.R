@@ -80,7 +80,7 @@ gaugeList <- gaugeList[-1]
 
 ui<- fluidPage(
   theme="bootstrap.css",
-  titlePanel(htmlOutput("uploadDate")),
+  titlePanel(htmlOutput("uploadDate"), "Spawner App"),
   tabsetPanel( type = "tabs",
     tabPanel("Fish And Redd Counts",sidebarLayout(sidebarPanel(selectInput("Tributary", "Tributary:", surveyedTributaries), uiOutput("reachSelect"),
       selectInput("Season", "Season:", seasonList, selected = "2016-2017"), uiOutput("selectSeasonOrSpecies"), width = 2), mainPanel( htmlOutput("NumberOfFish"), 

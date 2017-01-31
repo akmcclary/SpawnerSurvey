@@ -62,7 +62,7 @@ mostRecentTrip<-inner_join(TripCounts, mostRecentTrip, by = c("ReachName", "Trib
 #GreenValleyPlot <- tripData %>% filter(REACHNAME == selectedReach)%>% ggplot(aes(x=DATE, y = FISHING)) + geom_point()+ scale_x_date()
 #GreenValleyPlot + geom_line(data = flowData, aes(DATE, MIL.School..ft..))
 CrewNames<-c("ZR","WB","CO","MT","LE","AMJ","NB","AB","AM ","AI", "SB", "JP", "KS","RA", "BA", "JRR", "AJ")
-CrewCounts<-data.frame(FishTotals=numeric(17), ReddTotals=numeric(17), CombinedTotals=numeric(17))
+CrewCounts<-data.frame(FishTotals=numeric(17), ReddTotals=numeric(17), CombinedTotals=numeric(17), NumberOfSurveys=numeric(17), FishPerSurvey=numeric(17), ReddsPerSurvey= numeric(17), Efficiency = numeric(17))
 surveyedReaches<-unique(tripData$ReachName)
 surveyedTributaries<-unique(tripData$Tributary)
 #surveyedReaches<- as.vector.factor(surveyedReaches)
@@ -446,6 +446,7 @@ server<- function(input, output) {
         CrewCounts$CrewName[i] = name
         CrewCounts$FishTotals[i]<-fish %>% filter(Season == "2016-2017")%>%filter(grepl(name, Crew))%>%nrow()
         CrewCounts$ReddTotals[i]<-redds%>% filter(Season == "2016-2017")%>%filter(ReddAge == 1)%>%filter(grepl(name, Crew))%>%nrow()
+        CrewCounts$NumberOfSurveys[i]<-tripData%>%filter(Season == "2016-2017")%>% filter(Fishing == 1) %>%filter(grepl(name, Crew))%>%nrow()
         i=i+1
       }
       CrewCounts$CombinedTotals<-CrewCounts$FishTotals + CrewCounts$ReddTotals
@@ -455,13 +456,19 @@ server<- function(input, output) {
       CrewCounts$CrewName[i] = name
       CrewCounts$FishTotals[i]<-fish %>% filter(Season == "2016-2017")%>%filter(grepl(name, Crew))%>%filter(Species == input$SpeciesSelected)%>%nrow()
       CrewCounts$ReddTotals[i]<-redds%>% filter(Season == "2016-2017")%>%filter(ReddAge == 1)%>%filter(grepl(name, Crew))%>%filter(Species == input$SpeciesSelected)%>%nrow()
-      
+      CrewCounts$NumberOfSurveys[i]<-tripData%>%filter(Season == "2016-2017")%>% filter(Fishing == 1) %>%filter(grepl(name, Crew))%>%nrow()
       i=i+1
     }
     CrewCounts$CombinedTotals<-CrewCounts$FishTotals + CrewCounts$ReddTotals
-    CrewCounts<-CrewCounts[,c(4,1,2,3)]
+    CrewCounts$FishPerSurvey<- CrewCounts$FishTotals/CrewCounts$NumberOfSurveys
+    CrewCounts$ReddsPerSurvey<- CrewCounts$ReddTotals/CrewCounts$NumberOfSurveys
+    CrewCounts$Efficiency<-CrewCounts$CombinedTotals/CrewCounts$NumberOfSurveys
+    CrewCounts$FishPerSurvey<- round(CrewCounts$FishPerSurvey,2)
+    CrewCounts$ReddsPerSurvey<- round(CrewCounts$ReddsPerSurvey, 2)
+    CrewCounts$Efficiency<-round(CrewCounts$Efficiency, 2)
+    CrewCounts<-CrewCounts[,c(8,1,2,3,4,5,6,7)]
     
-    DT::datatable(CrewCounts, colnames = c("Crew", "Fish Total", "Redd Total", "Combined Total"), rownames = FALSE, options = list(pageLength= 17,  order=list(3,'desc')))
+    DT::datatable(CrewCounts, colnames = c("Crew", "Fish Total", "Redd Total", "Combined Total", "Number of Surveys", "Fish/Survey", "Redds/Survey", "Efficiency"), rownames = FALSE, options = list(pageLength= 17,  order=list(3,'desc')))
   })
   
 }

@@ -18,16 +18,16 @@ tripData<-read_csv("TripDataFish.csv")
 fish<-read_csv("Fish.csv")
 redds<-read_csv("Redds.csv")
 reachLengths<-read_csv("ReachLengths.csv")
-precip<-read_csv("Daily_Precip.csv")
+#precip<-read_csv("Daily_Precip.csv")
 #Convert Dates to Dates in R
-precip$DATE<-mdy(precip$Date)
+#precip$DATE<-mdy(precip$Date)
 flowData$DATE<-mdy(flowData$DATE)
-precip<-precip[,c(8, 2,3,4,5)]
+#precip<-precip[,c(8, 2,3,4,5)]
 tripData$DATE<-tripData$Date
 
-precip_gauge_names<-c(colnames(precip))
-precip_gauge_names<-precip_gauge_names[2:5]
-precip[precip_gauge_names]<- sapply(precip[precip_gauge_names],as.numeric)
+#precip_gauge_names<-c(colnames(precip))
+#precip_gauge_names<-precip_gauge_names[2:5]
+#precip[precip_gauge_names]<- sapply(precip[precip_gauge_names],as.numeric)
 # fish$Date<-mdy(fish$Date)
 # redds$Date<-mdy(redds$Date)
 fish<-mutate_each(fish,funs(toupper))
@@ -51,7 +51,7 @@ gaugeNames<-c(colnames(flowData))
 gaugeNames<-gaugeNames[2:14]
 flowData[gaugeNames]<- sapply(flowData[gaugeNames],as.numeric)
 mergedData<- join(flowData, tripData, by = "DATE", "inner")
-mergedData<- join(precip,mergedData, by = "DATE", "inner")
+#mergedData<- join(precip,mergedData, by = "DATE", "inner")
 reachLengths<-reachLengths%>%mutate_each(funs(toupper),Tributary)
 tripData<-join(tripData,reachLengths,by=c("ReachName","Tributary"))
 mergedData$Fishing<-as.factor(mergedData$Fishing)

@@ -18,13 +18,14 @@ tripData<-read_csv("TripDataFish.csv")
 fish<-read_csv("Fish.csv")
 redds<-read_csv("Redds.csv")
 reachLengths<-read_csv("ReachLengths.csv")
+streamConditions<-read_csv("StreamConditions.csv")
 #precip<-read_csv("Daily_Precip.csv")
 #Convert Dates to Dates in R
 #precip$DATE<-mdy(precip$Date)
 flowData$DATE<-mdy(flowData$DATE)
 #precip<-precip[,c(8, 2,3,4,5)]
 tripData$DATE<-tripData$Date
-
+streamConditions$Date
 #precip_gauge_names<-c(colnames(precip))
 #precip_gauge_names<-precip_gauge_names[2:5]
 #precip[precip_gauge_names]<- sapply(precip[precip_gauge_names],as.numeric)
@@ -54,6 +55,7 @@ mergedData<- join(flowData, tripData, by = "DATE", "inner")
 #mergedData<- join(precip,mergedData, by = "DATE", "inner")
 reachLengths<-reachLengths%>%mutate_each(funs(toupper),Tributary)
 tripData<-join(tripData,reachLengths,by=c("ReachName","Tributary"))
+streamConditions<-join(flowData, streamConditions, by = "DATE", "inner")
 mergedData$Fishing<-as.factor(mergedData$Fishing)
 
 #fishplot<-fish%>%filter(Season=="2016-2017")%>%ggplot(aes(Species, fill = Species))+ geom_bar()+theme_classic()+ggtitle("Live Fish Seen")+stat_count(aes(y = ..count.. + 1, label=..count..), vjust=0, geom="text", position="identity")+ fillScale

@@ -25,7 +25,8 @@ streamConditions<-read_csv("StreamConditions.csv")
 flowData$DATE<-mdy(flowData$DATE)
 #precip<-precip[,c(8, 2,3,4,5)]
 tripData$DATE<-tripData$Date
-streamConditions$Date
+streamConditions$DATE<-mdy(streamConditions$DATE)
+
 #precip_gauge_names<-c(colnames(precip))
 #precip_gauge_names<-precip_gauge_names[2:5]
 #precip[precip_gauge_names]<- sapply(precip[precip_gauge_names],as.numeric)
@@ -55,9 +56,9 @@ mergedData<- join(flowData, tripData, by = "DATE", "inner")
 #mergedData<- join(precip,mergedData, by = "DATE", "inner")
 reachLengths<-reachLengths%>%mutate_each(funs(toupper),Tributary)
 tripData<-join(tripData,reachLengths,by=c("ReachName","Tributary"))
-streamConditions<-join(flowData, streamConditions, by = "DATE", "inner")
 mergedData$Fishing<-as.factor(mergedData$Fishing)
-
+streamConditions<-join(flowData, streamConditions, by = "DATE", "inner")
+streamConditions$SURVEY<-as.factor(streamConditions$SURVEY)
 #fishplot<-fish%>%filter(Season=="2016-2017")%>%ggplot(aes(Species, fill = Species))+ geom_bar()+theme_classic()+ggtitle("Live Fish Seen")+stat_count(aes(y = ..count.. + 1, label=..count..), vjust=0, geom="text", position="identity")+ fillScale
 #reddplot<-redds%>%filter(Season=="2016-2017")%>%filter(ReddAge == 1)%>%ggplot(aes(Species, fill = Species))+ geom_bar()+theme_classic()+ggtitle("Redds Seen")+stat_count(aes(y = ..count.. + 1, label=..count..), vjust=0, geom="text", position="identity")+ fillScale
 
@@ -90,6 +91,7 @@ seasonList<- sort(seasonList, decreasing = TRUE)
 gaugeList <- colnames(flowData)
 gaugeList <- gaugeList[-1]
 
+
 ui<- fluidPage(
   theme="bootstrap.css",
   titlePanel(htmlOutput("uploadDate"), "Spawner App"),
@@ -101,13 +103,29 @@ ui<- fluidPage(
     #   plotOutput("CrewfishGraph"), htmlOutput("CrewNumberOfRedds"), plotOutput("CrewreddGraph")),
     tabPanel("Crew Leader Boards", selectInput("SpeciesSelected", "Species:", speciesList2, selected = "ALL"), DT::dataTableOutput("CrewLeaderBoard")),
     tabPanel("Surveyability", 
-      sidebarLayout(sidebarPanel( selectInput("ReachFlow", "Reach:", surveyedReaches, selected = "ALL"), selectInput("Gauge", "Gauge:", gaugeList),
+      sidebarLayout(sidebarPanel( selectInput("ReachFlow", "Reach:", surveyedReaches, selected = "ALL"),  radioButtons("SpawnerOrOther","View Spawner or Other",c( "Spawner" = "Spawner", "Other" = "Other")), selectInput("Gauge", "Gauge:", gaugeList),
         dateInput('startDate', label = 'Start Date: yyyy-mm-dd', value = '2016-01-1'),
         dateInput('enddate', label = 'End Date: yyyy-mm-dd', value = uploadDate), width = 2),
       mainPanel( htmlOutput("maxflow"), plotlyOutput("HydroGraphPlot"), DT::dataTableOutput("fishTable")))),
     tabPanel("DaysSinceSurveyed", DT::dataTableOutput("mostRecentSurveyTable"))))
 
 server<- function(input, output) {
+  
+#StreamConditions
+  output$StreamConditionsPlot <- renderPlotly(
+    {
+      if (input$ReachFlow == "ALL"){
+        return(NULL)
+      } else {
+        # FilteredData2<- streamConditions %>% filter(Survey == input$Survey)
+        # maxGaugeHeight <- max(FilteredData2[input$Gauge], na.rm = TRUE)
+        #scale_color_manual(values = c("0" = "red", "1"= "green")) + scale_shape_manual(values = c("0" = 4, "1" = 11))+
+        flowGraph <- streamConditions %>% ggplot(aes_string(x="DATE", y = input$Gauge)) + theme_minimal() + geom_point(aes(color=SURVEY, shape = SURVEY), size = 6)+ scale_x_date(limits = c(input$startDate,input$enddate)) + geom_line(data = flowData, aes_string("DATE", input$Gauge))
+        plotlygraph <- ggplotly(flowGraph)
+        plotlygraph
+      }} 
+  )
+  
   
 #Surveyability Tab  
   output$maxflow <-renderUI({
@@ -121,15 +139,23 @@ server<- function(input, output) {
   
   
   output$HydroGraphPlot <- renderPlotly({
+    
     if (input$ReachFlow == "ALL"){
       return(NULL)
-      } else {
+      } 
+    else if(input$SpawnerOrOther == "Spawner") {
       FilteredData2<- mergedData %>% filter(ReachName == input$ReachFlow)
       maxGaugeHeight <- max(FilteredData2[input$Gauge], na.rm = TRUE)
       flowGraph <- mergedData %>% filter(ReachName == input$ReachFlow)%>% ggplot(aes_string(x="DATE", y = input$Gauge)) + theme_minimal() + geom_point(aes(color=Fishing, shape = Fishing), size = 6)+ scale_color_manual(values = c("0" = "red", "1"= "green")) + scale_shape_manual(values = c("0" = 4, "1" = 11))+ scale_x_date(limits = c(input$startDate,input$enddate)) + geom_line(data = flowData, aes_string("DATE", input$Gauge))
       plotlygraph <- ggplotly(flowGraph)
       plotlygraph
-    }})
+    }
+    else if (input$SpawnerOrOther == "Other"){
+      flowGraph <- streamConditions %>% ggplot(aes_string(x="DATE", y = input$Gauge)) + theme_minimal() + geom_point(aes(color=SURVEY, shape = SURVEY), size = 6)+ scale_x_date(limits = c(input$startDate,input$enddate)) + geom_line(data = flowData, aes_string("DATE", input$Gauge))
+      plotlygraph <- ggplotly(flowGraph)
+      plotlygraph
+    }
+    })
   output$fishTable = renderDataTable({
     FishData<- mergedData %>%filter(ReachName == input$ReachFlow)%>%filter(DATE >= input$startDate & DATE <= input$enddate)
     FishData<- FishData[,c("Date","ReachName", "Tributary", "Crew", "CohoIndividuals","SteelheadIndividuals","ChinookIndividuals", "SalmonidSpIndividuals", "CohoRedds", "SteelheadRedds", "ChinookRedds", "SalmonidSpRedds","Comments")]
@@ -158,7 +184,7 @@ server<- function(input, output) {
       radioButtons("SpeciesOrSeason","View by Species or Season",c( "Species" = "Species", "Season" = "Season"))
     } else return(NULL)
   })
-  
+
   
   
   #Fish and Redds Tab
